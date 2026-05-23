@@ -1,0 +1,277 @@
+import { Pencil, Trash2 } from "lucide-react";
+import React from "react";
+import { DataGrid } from "react-data-grid";
+import "react-data-grid/lib/styles.css";
+import { PERSON_TYPES_CONFIG } from "../constants/person-types";
+import { Badge } from "@/components/ui/badge";
+import _ from "lodash";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const provinciasEcuador = [
+  "Azuay",
+  "Bolívar",
+  "Cañar",
+  "Carchi",
+  "Chimborazo",
+  "Cotopaxi",
+  "El Oro",
+  "Esmeraldas",
+  "Galápagos",
+  "Guayas",
+  "Imbabura",
+  "Loja",
+  "Los Ríos",
+  "Manabí",
+  "Morona Santiago",
+  "Napo",
+  "Orellana",
+  "Pastaza",
+  "Pichincha",
+  "Santa Elena",
+  "Santo Domingo de los Tsáchilas",
+  "Sucumbíos",
+  "Tungurahua",
+  "Zamora Chinchipe",
+];
+
+function PeopleGrid({ rows = [], onEdit, onDelete }) {
+  const columns = [
+    {
+      key: "idNumber",
+      name: "Identificación",
+      width: 150,
+
+      renderCell: ({ row }) => (
+        <span className="text-slate-700">{row.idNumber}</span>
+      ),
+    },
+
+    {
+      key: "documentType",
+      name: "Tipo de documento",
+      width: 180,
+
+      renderCell: ({ row }) => (
+        <div className="flex justify-center">
+          <span className="text-slate-700">{row.documentType}</span>
+        </div>
+      ),
+    },
+
+    {
+      key: "name",
+      name: "Nombre / Razón Social",
+      width: 300,
+
+      renderCell: ({ row }) => (
+        <span className="text-slate-800">{row.name}</span>
+      ),
+    },
+
+    {
+      key: "email",
+      name: "Email",
+      width: 240,
+
+      renderCell: ({ row }) => {
+        const joinedEmails = _.chain([row.email, ..._.castArray(row.emails)])
+          .compact()
+          .uniq()
+          .join(", ")
+          .value();
+
+        return <span className="text-slate-600">{joinedEmails}</span>;
+      },
+    },
+
+    {
+      key: "phone",
+      name: "Teléfono",
+      width: 160,
+
+      renderCell: ({ row }) => {
+        //<div className="text-center text-slate-700">{row.phone}</div>
+        return (
+          <Select>
+            <SelectTrigger className="w-full h-full border-0 rounded-none focus:ring-0 focus:ring-offset-0">
+              <SelectValue placeholder="Selecciona una provincia" />
+            </SelectTrigger>
+
+            <SelectContent>
+              {provinciasEcuador.map((provincia) => (
+                <SelectItem key={provincia} value={provincia}>
+                  {provincia}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      },
+    },
+
+    {
+      key: "personType",
+      name: "Tipos",
+      width: 260,
+      renderCell: ({ row }) => (
+        <div className="flex flex-wrap items-center gap-1 py-1">
+          {row.personType?.map((type) => {
+            const config = PERSON_TYPES_CONFIG[type];
+            return (
+              <Badge key={type} variant="outline" className={config?.badge}>
+                {config?.label || type}
+              </Badge>
+            );
+          })}
+        </div>
+      ),
+    },
+
+    {
+      key: "actions",
+      name: "Acciones",
+      width: 120,
+
+      renderCell: ({ row }) => (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => onEdit?.(row)}
+            className="
+              rounded-md
+              p-1
+              text-blue-600
+              transition-colors
+              hover:bg-blue-50
+            "
+          >
+            <Pencil size={14} />
+          </button>
+
+          <button
+            onClick={() => onDelete?.(row)}
+            className="
+              rounded-md
+              p-1
+              text-red-600
+              transition-colors
+              hover:bg-red-50
+            "
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div
+      className="
+        overflow-hidden
+        rounded-sm
+        border
+        border-slate-200
+        bg-white
+      "
+    >
+      <DataGrid
+        columns={columns}
+        rows={rows}
+        rowHeight={34}
+        headerRowHeight={34}
+        className="
+ rdg-light
+
+    /* 1. FORZAR LA ELIMINACIÓN DE BORDES LATERALES CON CSS NATIVO */
+    [&_.rdg-cell]:![border-left:none]
+    [&_.rdg-cell]:![border-right:none]
+    [&_.rdg-header-cell]:![border-left:none]
+    [&_.rdg-header-cell]:![border-right:none]
+
+    /* 2. ASEGURAR EL BORDE INFERIOR */
+    [&_.rdg-cell]:!border-b
+    [&_.rdg-header-cell]:!border-b
+
+    /* Estilos de las celdas */
+    [&_.rdg-cell]:text-[10px]
+    [&_.rdg-cell]:px-2
+    [&_.rdg-cell]:py-0
+    [&_.rdg-cell]:leading-none
+    [&_.rdg-cell]:flex
+    [&_.rdg-cell]:items-center
+    
+    /* Estilos de la cabecera */
+    [&_.rdg-header-row]:text-[10px]
+    [&_.rdg-header-row]:font-semibold
+    [&_.rdg-header-row]:uppercase
+    [&_.rdg-header-row]:tracking-wide
+    [&_.rdg-header-cell]:text-left
+    [&_.rdg-header-cell]:justify-start
+
+    /* Efecto Hover */
+    [&_.rdg-row:hover]:bg-slate-50
+
+    /* Centrar Columna 5 */
+    [&_.rdg-header-cell[aria-colindex='5']]:text-center
+    [&_.rdg-header-cell[aria-colindex='5']]:justify-center
+    [&_.rdg-cell[aria-colindex='5']]:text-center
+    [&_.rdg-cell[aria-colindex='5']]:justify-center
+
+    /* Centrar Columna 2 */
+    [&_.rdg-header-cell[aria-colindex='2']]:text-center
+    [&_.rdg-header-cell[aria-colindex='2']]:justify-center
+    [&_.rdg-cell[aria-colindex='2']]:text-center
+    [&_.rdg-cell[aria-colindex='2']]:justify-center
+
+    /* Centrar Columna 6 */
+    [&_.rdg-header-cell[aria-colindex='6']]:text-center
+    [&_.rdg-header-cell[aria-colindex='6']]:justify-center
+    [&_.rdg-cell[aria-colindex='6']]:text-center
+    [&_.rdg-cell[aria-colindex='6']]:justify-center
+
+    /* Centrar Columna 7 */
+    [&_.rdg-header-cell[aria-colindex='7']]:text-center
+    [&_.rdg-header-cell[aria-colindex='7']]:justify-center
+    [&_.rdg-cell[aria-colindex='7']]:text-center
+    [&_.rdg-cell[aria-colindex='7']]:justify-center
+  "
+      />
+    </div>
+  );
+}
+
+const PeoplePagex = () => {
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
+      <div className="flex items-end justify-between gap-2.5">
+        <DataTableSearch
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Buscar persona..."
+          className="flex-1 max-w-md"
+        />
+        <NewRecordButton variant="blue" onClick={handleCreate} />
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <PeopleGrid
+          rows={[]}
+          onEdit={(r) => {
+            console.log(r);
+          }}
+          onDelete={(r) => {
+            console.log(r);
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default PeoplePagex;

@@ -1,76 +1,47 @@
-import { Search } from "lucide-react";
-import { debounce } from "lodash";
-import {
-  type ChangeEvent,
-  type InputHTMLAttributes,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { Search, X } from "lucide-react";
+import { type InputHTMLAttributes } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type SearchInputProps = InputHTMLAttributes<HTMLInputElement> & {
-  onFinish?: (value: string) => void;
-  debounceTime?: number;
+	onClear?: () => void;
 };
 
 export default function SearchInput({
-  value,
-  onChange,
-  onFinish,
-  debounceTime = 500,
-  className,
-  defaultValue = "",
-  ...props
+	value,
+	className,
+	onClear,
+	...props
 }: SearchInputProps) {
-  const isControlled = value !== undefined;
+	return (
+		<div className="relative w-full max-w-xl">
+			<Search
+				className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+				size={18}
+			/>
 
-  const [internalValue, setInternalValue] = useState(
-    String(defaultValue ?? ""),
-  );
+			<Input
+				{...props}
+				value={value}
+				className={cn(
+					"h-12 border-slate-200 pl-12 pr-12 focus-visible:ring-2 focus-visible:ring-blue-500",
+					className
+				)}
+			/>
 
-  const currentValue = isControlled ? String(value ?? "") : internalValue;
-
-  const debouncedFinish = useMemo(() => {
-    if (!onFinish) {
-      return null;
-    }
-
-    return debounce((value: string) => {
-      onFinish(value);
-    }, debounceTime);
-  }, [onFinish, debounceTime]);
-
-  useEffect(() => {
-    return () => {
-      debouncedFinish?.cancel();
-    };
-  }, [debouncedFinish]);
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-
-    if (!isControlled) {
-      setInternalValue(newValue);
-    }
-
-    onChange?.(e);
-
-    debouncedFinish?.(newValue);
-  };
-
-  return (
-    <div className="relative w-full max-w-xl">
-      <Search
-        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-        size={18}
-      />
-
-      <input
-        {...props}
-        value={currentValue}
-        onChange={handleChange}
-        className={`h-12 w-full rounded-xl border border-slate-200 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500 ${className ?? ""}`}
-      />
-    </div>
-  );
+			{value && onClear && (
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon"
+					onClick={onClear}
+					className="absolute right-2 top-1/2 z-10 h-8 w-8 -translate-y-1/2 rounded-full p-0"
+				>
+					<X size={16} />
+				</Button>
+			)}
+		</div>
+	);
 }

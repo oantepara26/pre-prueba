@@ -1,0 +1,8 @@
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "El correo electrónico no es válido."
+  }
+}

@@ -12,6 +12,12 @@ export const personaSchema = z.object({
 	phone: z.string().min(7, "Teléfono inválido"),
 
 	website: z.string().min(3, "Website requerido"),
+
+	provinciaId: z.number().min(1, "Provincia requerida"),
+
+	ciudadId: z.number().min(1, "Ciudad requerida"),
+
+	cantonId: z.number().min(1, "Cantón requerido"),
 });
 
 export type PersonaFormValues = z.infer<typeof personaSchema>;

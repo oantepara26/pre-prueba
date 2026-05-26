@@ -21,6 +21,8 @@ export function usePersonasPage() {
 			resetFormData: state.resetFormData,
 			isSubmittingForm: state.isSubmittingForm,
 			setIsSubmittingForm: state.setIsSubmittingForm,
+			isEditingPersona: state.isEditingPersona,
+			setIsEditingPersona: state.setIsEditingPersona,
 		}))
 	);
 

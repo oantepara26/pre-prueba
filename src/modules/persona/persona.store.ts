@@ -22,6 +22,9 @@ interface PersonaPageStore {
 
 	isSubmittingForm: boolean;
 	setIsSubmittingForm: (isSubmittingForm: boolean) => void;
+
+	isEditingPersona: boolean;
+	setIsEditingPersona: (isEditingPersona: boolean) => void;
 }
 
 export const initialPersonaFormData: Persona = {
@@ -31,6 +34,9 @@ export const initialPersonaFormData: Persona = {
 	email: "",
 	phone: "",
 	website: "",
+	provinciaId: 0,
+	ciudadId: 0,
+	cantonId: 0,
 };
 
 export const usePersonasPageStore = create<PersonaPageStore>((set) => ({
@@ -40,6 +46,7 @@ export const usePersonasPageStore = create<PersonaPageStore>((set) => ({
 	showPersonaModal: false,
 	isSubmittingForm: false,
 	formData: initialPersonaFormData,
+	isEditingPersona: false,
 	setShowPersonaModal: (showPersonaModal) =>
 		set({
 			showPersonaModal,
@@ -75,6 +82,11 @@ export const usePersonasPageStore = create<PersonaPageStore>((set) => ({
 	setIsSubmittingForm: (isSubmittingForm) =>
 		set({
 			isSubmittingForm,
+		}),
+
+	setIsEditingPersona: (isEditingPersona) =>
+		set({
+			isEditingPersona,
 		}),
 }));
 

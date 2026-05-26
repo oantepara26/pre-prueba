@@ -5,4 +5,8 @@ export interface Persona {
 	email: string;
 	phone: string;
 	website: string;
+
+	provinciaId: number;
+	ciudadId: number;
+	cantonId: number;
 }

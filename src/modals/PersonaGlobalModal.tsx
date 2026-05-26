@@ -17,7 +17,6 @@ import {
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -25,6 +24,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+
+import clsx from "clsx";
 
 import {
 	fetchCantones,
@@ -34,30 +35,33 @@ import {
 	type Canton,
 	type Ciudad,
 	type Provincia,
-} from "../personas.api";
-import { personaSchema, type PersonaFormValues } from "../persona.schema";
-import { initialPersonaFormData } from "../persona.store";
-import { usePersonasPage } from "../hooks/usePersonasPage";
+} from "@/modules/persona/personas.api";
+import {
+	initialPersonaFormData,
+	usePersonaGlobalModalStore,
+} from "@/store/personaModal.store";
+import {
+	personaSchema,
+	type PersonaFormValues,
+} from "@/modules/persona/persona.schema";
 
-type PersonaModalProps = {
-	onSuccessCallback: () => void | Promise<void>;
-};
-
-export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
-	const {
-		showPersonaModal,
-		setShowPersonaModal,
-		formData,
-		setFormData,
-		resetFormData,
-		isEditingPersona,
-	} = usePersonasPage();
+export default function PersonaGlobalModal() {
+	const showPersonaModal = usePersonaGlobalModalStore(
+		(state) => state.showPersonaModal
+	);
+	const formData = usePersonaGlobalModalStore((state) => state.formData);
+	const onSuccess = usePersonaGlobalModalStore((state) => state.onSuccess);
+	const closePersonaModal = usePersonaGlobalModalStore(
+		(state) => state.closePersonaModal
+	);
+	const setFormData = usePersonaGlobalModalStore(
+		(state) => state.setFormData
+	);
 
 	const [provincias, setProvincias] = useState<Provincia[]>([]);
 	const [ciudades, setCiudades] = useState<Ciudad[]>([]);
 	const [cantones, setCantones] = useState<Canton[]>([]);
-	const [isLoadingPersona, setIsLoadingPersona] = useState(false);
-	const [isLoadingUbicacion, setIsLoadingUbicacion] = useState(false);
+	const [isLoadingLocations, setIsLoadingLocations] = useState(false);
 
 	const {
 		register,
@@ -91,49 +95,21 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 	useEffect(() => {
 		if (!showPersonaModal) return;
 
-		const loadInitialData = async () => {
+		const loadProvincias = async () => {
 			try {
-				setIsLoadingUbicacion(true);
-
-				const provinciasResponse = await fetchProvincias();
-				setProvincias(provinciasResponse.data);
-
-				reset(formData);
-
-				if (!formData.provinciaId) return;
-
-				const ciudadesResponse = await fetchCiudades(
-					formData.provinciaId
-				);
-				setCiudades(ciudadesResponse.data);
-
-				if (!formData.ciudadId) return;
-
-				const cantonesResponse = await fetchCantones(
-					formData.provinciaId,
-					formData.ciudadId
-				);
-				setCantones(cantonesResponse.data);
+				setIsLoadingLocations(true);
+				const response = await fetchProvincias();
+				setProvincias(response.data);
 			} catch {
-				toast.error("No se pudieron cargar las ubicaciones.");
+				toast.error("No se pudieron cargar las provincias.");
 			} finally {
-				setIsLoadingUbicacion(false);
+				setIsLoadingLocations(false);
 			}
 		};
 
-		void loadInitialData();
+		reset(formData);
+		void loadProvincias();
 	}, [formData, reset, showPersonaModal]);
-
-	const handleClose = (isOpen: boolean) => {
-		if (isOpen) return;
-		if (isSubmitting || isLoadingPersona || isLoadingUbicacion) return;
-
-		reset(initialPersonaFormData);
-		resetFormData();
-		setCiudades([]);
-		setCantones([]);
-		setShowPersonaModal(false);
-	};
 
 	const handleStoreSync = () => {
 		setFormData(getValues());
@@ -156,6 +132,7 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 		});
 
 		setFormData({
+			...getValues(),
 			provinciaId: provinciaSeleccionada,
 			ciudadId: 0,
 			cantonId: 0,
@@ -165,16 +142,13 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 		setCantones([]);
 
 		try {
-			setIsLoadingUbicacion(true);
+			setIsLoadingLocations(true);
 			const response = await fetchCiudades(provinciaSeleccionada);
 			setCiudades(response.data);
-		} catch {
-			toast.error("No se pudieron cargar las ciudades.");
 		} finally {
-			setIsLoadingUbicacion(false);
+			setIsLoadingLocations(false);
 		}
 	};
-
 	const handleCiudadChange = async (value: string) => {
 		const ciudadSeleccionada = Number(value);
 
@@ -188,6 +162,7 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 		});
 
 		setFormData({
+			...getValues(),
 			ciudadId: ciudadSeleccionada,
 			cantonId: 0,
 		});
@@ -195,16 +170,14 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 		setCantones([]);
 
 		try {
-			setIsLoadingUbicacion(true);
+			setIsLoadingLocations(true);
 			const response = await fetchCantones(
 				provinciaId,
 				ciudadSeleccionada
 			);
 			setCantones(response.data);
-		} catch {
-			toast.error("No se pudieron cargar los cantones.");
 		} finally {
-			setIsLoadingUbicacion(false);
+			setIsLoadingLocations(false);
 		}
 	};
 
@@ -216,89 +189,49 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 			shouldDirty: true,
 		});
 
-		setFormData({
-			cantonId: cantonSeleccionado,
-		});
+		handleStoreSync();
+	};
+
+	const handleClose = (isOpen: boolean) => {
+		if (isOpen) return;
+		if (isSubmitting) return;
+
+		reset(initialPersonaFormData);
+		setCiudades([]);
+		setCantones([]);
+		closePersonaModal();
 	};
 
 	const onSubmit = async (data: PersonaFormValues) => {
 		try {
-			setIsLoadingPersona(true);
-
 			const response = await savePersona(data);
 
-			if (!response.success) throw new Error("Error del servidor");
+			if (!response.success) throw new Error("Error");
 
-			toast.success(
-				isEditingPersona
-					? "La persona se actualizó correctamente."
-					: "Los datos se han guardado correctamente."
-			);
+			toast.success("Persona creada correctamente.");
 
-			await onSuccessCallback();
+			await onSuccess?.();
 			handleClose(false);
 		} catch {
-			toast.error(
-				"Hubo un problema al intentar guardar la persona. Intenta de nuevo."
-			);
-		} finally {
-			setIsLoadingPersona(false);
+			toast.error("No se pudo guardar la persona.");
 		}
 	};
 
 	return (
 		<Dialog open={showPersonaModal} onOpenChange={handleClose}>
-			<DialogContent
-				className="sm:max-w-md max-h-[90vh] flex flex-col px-0 overflow-hidden"
-				onPointerDownOutside={(e) => {
-					if (
-						isSubmitting ||
-						isLoadingPersona ||
-						isLoadingUbicacion
-					) {
-						e.preventDefault();
-					}
-				}}
-				onEscapeKeyDown={(e) => {
-					if (
-						isSubmitting ||
-						isLoadingPersona ||
-						isLoadingUbicacion
-					) {
-						e.preventDefault();
-					}
-				}}
-				onInteractOutside={(e) => {
-					if (
-						isSubmitting ||
-						isLoadingPersona ||
-						isLoadingUbicacion
-					) {
-						e.preventDefault();
-					}
-				}}
-			>
+			<DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col px-0 overflow-hidden">
 				<DialogHeader className="px-6">
-					<DialogTitle>
-						{isEditingPersona
-							? "Editar Persona"
-							: "Registrar Nueva Persona"}
-					</DialogTitle>
+					<DialogTitle>Registrar Nueva Persona</DialogTitle>
 					<DialogDescription>
-						{isEditingPersona
-							? "Formulario para editar una persona existente"
-							: "Formulario para crear una nueva persona en el sistema"}
+						Formulario para crear una nueva persona en el sistema
 					</DialogDescription>
 				</DialogHeader>
 
 				<form
-					id="user-form"
+					id="persona-form"
 					onSubmit={handleSubmit(onSubmit)}
 					className={clsx("flex-1 min-h-0 overflow-y-auto px-6", {
-						"pointer-events-none opacity-80":
-							isSubmitting ||
-							isLoadingPersona ||
-							isLoadingUbicacion,
+						"pointer-events-none opacity-80": isSubmitting,
 					})}
 				>
 					<Field>
@@ -306,8 +239,7 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 						<Input
 							{...register("id", { valueAsNumber: true })}
 							type="number"
-							aria-invalid={!!errors.id}
-							placeholder="Ej: 123"
+							placeholder="Ej: 1"
 						/>
 						{errors.id && (
 							<FieldError>{errors.id.message}</FieldError>
@@ -316,11 +248,7 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 
 					<Field>
 						<FieldLabel>Nombre</FieldLabel>
-						<Input
-							{...register("name")}
-							aria-invalid={!!errors.name}
-							placeholder="Juan Pérez"
-						/>
+						<Input {...register("name")} placeholder="Juan Pérez" />
 						{errors.name && (
 							<FieldError>{errors.name.message}</FieldError>
 						)}
@@ -330,7 +258,6 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 						<FieldLabel>Usuario</FieldLabel>
 						<Input
 							{...register("username")}
-							aria-invalid={!!errors.username}
 							placeholder="jperez99"
 						/>
 						{errors.username && (
@@ -345,8 +272,7 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 								onChange: handleStoreSync,
 							})}
 							type="email"
-							aria-invalid={!!errors.email}
-							placeholder="juan@ejemplo.com"
+							placeholder="juan@email.com"
 						/>
 						{errors.email && (
 							<FieldError>{errors.email.message}</FieldError>
@@ -357,8 +283,6 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 						<FieldLabel>Teléfono</FieldLabel>
 						<Input
 							{...register("phone")}
-							type="tel"
-							aria-invalid={!!errors.phone}
 							placeholder="+593 99 999 9999"
 						/>
 						{errors.phone && (
@@ -372,9 +296,7 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 							{...register("website", {
 								onChange: handleStoreSync,
 							})}
-							type="url"
-							aria-invalid={!!errors.website}
-							placeholder="https://ejemplo.com"
+							placeholder="https://empresa.com"
 						/>
 						{errors.website && (
 							<FieldError>{errors.website.message}</FieldError>
@@ -459,28 +381,25 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 							<FieldError>{errors.cantonId.message}</FieldError>
 						)}
 					</Field>
+
+					{isLoadingLocations && (
+						<div className="text-sm text-muted-foreground">
+							Cargando ubicaciones...
+						</div>
+					)}
 				</form>
 
 				<DialogFooter className="px-6 pr-8">
 					<Button
 						type="submit"
-						disabled={
-							!isValid ||
-							isSubmitting ||
-							isLoadingPersona ||
-							isLoadingUbicacion
-						}
-						form="user-form"
+						form="persona-form"
+						disabled={!isValid || isSubmitting}
 					>
-						{isSubmitting ||
-						isLoadingPersona ||
-						isLoadingUbicacion ? (
+						{isSubmitting ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								Guardando...
 							</>
-						) : isEditingPersona ? (
-							"Actualizar Persona"
 						) : (
 							"Guardar Persona"
 						)}
@@ -490,3 +409,19 @@ export function PersonaModal({ onSuccessCallback }: PersonaModalProps) {
 		</Dialog>
 	);
 }
+
+/*
+const openCreatePersonaModal = usePersonaGlobalModalStore(
+	(state) => state.openCreatePersonaModal
+);
+
+<Button
+						type="button"
+						onClick={() => {
+							openCreatePersonaModal(async () => {
+								console.log("xxx");
+							});
+						}}
+					>
+						Nueva Persona
+					</Button>*/
